@@ -1,0 +1,43 @@
+name: Deploy Taiji dashboard
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: taiji-dashboard-pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download dashboard
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p site
+          base="https://taiji-category-flow.ayangya151546.chatgpt.site"
+          for file in index.html styles.css revision.css data.js app.js; do
+            curl --fail --location --retry 3 "$base/$file" --output "site/$file"
+          done
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+      - name: Upload dashboard
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - name: Deploy dashboard
+        id: deployment
+        uses: actions/deploy-pages@v4
