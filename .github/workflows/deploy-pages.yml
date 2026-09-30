@@ -29,8 +29,9 @@ jobs:
           set -euo pipefail
           mkdir -p site
           base="https://multi-category-intent-center.ayangya151546.chatgpt.site"
+          cache_bust="${GITHUB_SHA}"
           for file in index.html styles.css data.js channel-quality.js app.js; do
-            curl --fail --location --retry 5 --retry-delay 2 "$base/$file" --output "site/$file"
+            curl --fail --location --retry 5 --retry-delay 2 -H "Cache-Control: no-cache" "$base/$file?sync=$cache_bust" --output "site/$file"
           done
           node - <<'NODE' > data-files.txt
           global.window = {}
@@ -41,7 +42,7 @@ jobs:
           NODE
           while IFS= read -r file; do
             mkdir -p "site/$(dirname "$file")"
-            curl --fail --location --retry 5 --retry-delay 2 "$base/$file" --output "site/$file"
+            curl --fail --location --retry 5 --retry-delay 2 -H "Cache-Control: no-cache" "$base/$file?sync=$cache_bust" --output "site/$file"
           done < data-files.txt
           touch site/.nojekyll
       - name: Configure Pages
