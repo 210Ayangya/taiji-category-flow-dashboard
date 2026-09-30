@@ -1,4 +1,4 @@
-name: Deploy Taiji dashboard
+name: Deploy intent dashboard
 
 on:
   push:
@@ -11,7 +11,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: taiji-dashboard-pages
+  group: intent-dashboard-pages
   cancel-in-progress: true
 
 jobs:
@@ -20,16 +20,29 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Download dashboard
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p site
-          base="https://taiji-category-flow.ayangya151546.chatgpt.site"
-          for file in index.html styles.css revision.css data.js app.js; do
-            curl --fail --location --retry 3 "$base/$file" --output "site/$file"
+          base="https://multi-category-intent-center.ayangya151546.chatgpt.site"
+          for file in index.html styles.css data.js channel-quality.js app.js; do
+            curl --fail --location --retry 5 --retry-delay 2 "$base/$file" --output "site/$file"
           done
+          node - <<'NODE' > data-files.txt
+          global.window = {}
+          require('./site/data.js')
+          for (const period of window.DASHBOARD_META.periods || []) {
+            for (const file of period.files || []) console.log(file)
+          }
+          NODE
+          while IFS= read -r file; do
+            mkdir -p "site/$(dirname "$file")"
+            curl --fail --location --retry 5 --retry-delay 2 "$base/$file" --output "site/$file"
+          done < data-files.txt
+          touch site/.nojekyll
       - name: Configure Pages
         uses: actions/configure-pages@v5
         with:
